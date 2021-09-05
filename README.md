@@ -1,5 +1,15 @@
 # Akka Webinar (classic) Spring demo service
 
+## Webinar
+
+Az előadásról készült felvétel az alábbi linken érhető el.
+
+https://youtu.be/HITgoguM3hI
+
+Az előadásban bemutattot Akka demo service az alábbi linken érhető el.
+
+https://github.com/ZoltanLaszlo/non-blocking-akka-service-demo
+
 ## Futtatás
 
 A demóalkalmazás futtatásához egy MS SQL Server adatbázisra van szükség, amelynek az elérési paraméterei az
