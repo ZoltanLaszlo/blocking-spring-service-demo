@@ -35,3 +35,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+
+top_transaction_ids.txt

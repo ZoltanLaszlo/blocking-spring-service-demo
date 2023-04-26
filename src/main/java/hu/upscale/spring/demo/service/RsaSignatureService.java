@@ -1,19 +1,14 @@
 package hu.upscale.spring.demo.service;
 
-import static hu.upscale.spring.demo.util.ResourceUtil.readResourceFile;
-
 import hu.upscale.spring.demo.exception.CryptographyException;
-import java.security.InvalidKeyException;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
+import org.springframework.stereotype.Service;
+
+import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import org.springframework.stereotype.Service;
+
+import static hu.upscale.spring.demo.util.ResourceUtil.readResourceFile;
 
 /**
  * @author László Zoltán
@@ -41,6 +36,18 @@ public class RsaSignatureService {
             return privateSignature.sign();
         } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
             throw new CryptographyException("Failed to sign data", e);
+        }
+    }
+
+    public boolean verifySignature(byte[] signature) {
+        try {
+            Signature publicSignature = Signature.getInstance(SIGNATURE_ALGORITHM);
+            publicSignature.initVerify(publicKey);
+            publicSignature.update(signature);
+
+            return publicSignature.verify(signature);
+        } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
+            throw new CryptographyException("Failed to verify data", e);
         }
     }
 

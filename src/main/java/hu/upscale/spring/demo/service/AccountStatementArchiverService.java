@@ -5,49 +5,73 @@ import hu.upscale.spring.demo.repository.FinancialTransactionRepository;
 import hu.upscale.spring.demo.repository.entity.ArchiveFinancialTransaction;
 import hu.upscale.spring.demo.repository.entity.ArchiveFinancialTransaction.ArchiveFinancialTransactionId;
 import hu.upscale.spring.demo.repository.entity.FinancialTransaction;
-import java.util.Optional;
-import java.util.UUID;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Base64;
+import java.util.UUID;
+
 /**
  * @author László Zoltán
  */
+@Slf4j
 @Service
 @AllArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AccountStatementArchiverService {
 
-    private final FinancialTransactionRepository financialTransactionRepository;
-    private final ArchiveFinancialTransactionRepository archiveFinancialTransactionRepository;
-    private final ZipService zipService;
-    private final RsaSignatureService rsaSignatureService;
+    FinancialTransactionRepository financialTransactionRepository;
+    ArchiveFinancialTransactionRepository archiveFinancialTransactionRepository;
+    ZipService zipService;
+    RsaSignatureService rsaSignatureService;
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public Optional<String> archiveFinancialTransaction(UUID accountStatementId, String transactionId, int transactionNumber) {
-        Optional<FinancialTransaction> financialTransaction = financialTransactionRepository.findById(transactionId);
-        if (financialTransaction.isPresent()) {
-            ArchiveFinancialTransaction archiveFinancialTransaction = new ArchiveFinancialTransaction();
+    public void archiveFinancialTransaction(UUID accountStatementId, int transactionNumber, FinancialTransaction financialTransaction) {
+        ArchiveFinancialTransaction archiveFinancialTransaction = new ArchiveFinancialTransaction();
 
-            ArchiveFinancialTransactionId archiveFinancialTransactionId = new ArchiveFinancialTransactionId();
-            archiveFinancialTransactionId.setAccountStatementId(accountStatementId.toString());
-            archiveFinancialTransactionId.setTransactionId(transactionId);
+        ArchiveFinancialTransactionId archiveFinancialTransactionId = new ArchiveFinancialTransactionId();
+        archiveFinancialTransactionId.setAccountStatementId(accountStatementId.toString());
+        archiveFinancialTransactionId.setTransactionId(financialTransaction.getTransactionId());
 
-            archiveFinancialTransaction.setArchiveFinancialTransactionId(archiveFinancialTransactionId);
-            archiveFinancialTransaction.setTransactionNumber(transactionNumber);
+        archiveFinancialTransaction.setArchiveFinancialTransactionId(archiveFinancialTransactionId);
+        archiveFinancialTransaction.setTransactionNumber(transactionNumber);
 
-            byte[] rawData = financialTransaction.get().getData();
-            byte[] compressedData = zipService.compress(rawData);
-            byte[] signature = rsaSignatureService.signData(rawData);
+        var rawData = Base64.getDecoder().decode(financialTransaction.getData());
+        var compressedData = Base64.getEncoder().encodeToString(zipService.compress(rawData));
+        log.info(
+                "Financial transaction data compressed - transactionNumber: [{}], transactionId: [{}]",
+                transactionNumber,
+                financialTransaction.getTransactionId()
+        );
 
-            archiveFinancialTransaction.setCompressedData(compressedData);
-            archiveFinancialTransaction.setSignature(signature);
+        var signature = Base64.getEncoder().encodeToString(rsaSignatureService.signData(rawData));
+        log.info(
+                "Financial transaction data signed - transactionNumber: [{}], transactionId: [{}]",
+                transactionNumber,
+                financialTransaction.getTransactionId()
+        );
 
-            financialTransactionRepository.deleteById(archiveFinancialTransaction.getArchiveFinancialTransactionId().getTransactionId());
-            archiveFinancialTransactionRepository.save(archiveFinancialTransaction);
-        }
+        archiveFinancialTransaction.setCompressedData(compressedData);
+        archiveFinancialTransaction.setSignature(signature);
 
-        return financialTransaction.map(FinancialTransaction::getPreviousTransactionId);
+        archiveFinancialTransactionRepository.save(archiveFinancialTransaction);
+        log.info(
+                "Archive financial transaction saved - transactionNumber: [{}], accountStatementId: [{}], transactionId: [{}]",
+                transactionNumber,
+                accountStatementId,
+                financialTransaction.getTransactionId()
+        );
+
+        financialTransactionRepository.deleteById(financialTransaction.getTransactionId());
+        log.info(
+                "Financial transaction deleted - transactionNumber: [{}], transactionId: [{}]",
+                transactionNumber,
+                financialTransaction.getTransactionId()
+        );
     }
 }

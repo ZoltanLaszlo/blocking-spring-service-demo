@@ -1,40 +1,48 @@
 package hu.upscale.spring.demo.repository.entity;
 
-import java.io.Serializable;
-import javax.persistence.Column;
-import javax.persistence.Embeddable;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.FieldDefaults;
+
+import javax.persistence.*;
+import java.io.Serializable;
 
 /**
  * @author László Zoltán
  */
 @Data
 @Entity
-@Table(name = "ArchiveFinancialTransaction", schema = "demo")
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@Table(name = "archive_financial_transaction")
 public final class ArchiveFinancialTransaction {
 
     @EmbeddedId
-    private ArchiveFinancialTransactionId archiveFinancialTransactionId;
-    @Column(name = "TransactionNumber")
-    private int transactionNumber;
-    @Column(name = "CompressedData")
-    private byte[] compressedData;
-    @Column(name = "Signature")
-    private byte[] signature;
+    @EqualsAndHashCode.Include
+    ArchiveFinancialTransactionId archiveFinancialTransactionId;
+
+    @Column(name = "transaction_number")
+    int transactionNumber;
+
+    @Column(name = "compressed_data")
+    String compressedData;
+
+    @Column(name = "signature")
+    String signature;
 
     @Data
     @Embeddable
+    @FieldDefaults(level = AccessLevel.PRIVATE)
     public static final class ArchiveFinancialTransactionId implements Serializable {
 
         private static final long serialVersionUID = 1L;
 
-        @Column(name = "AccountStatementId")
-        private String accountStatementId;
-        @Column(name = "TransactionId", unique = true)
-        private String transactionId;
+        @Column(name = "account_statement_id")
+        String accountStatementId;
+
+        @Column(name = "transaction_id", unique = true)
+        String transactionId;
 
     }
 

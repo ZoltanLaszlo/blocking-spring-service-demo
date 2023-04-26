@@ -1,4 +1,4 @@
-# Akka Webinar (classic) Spring demo service
+# Reactive programming meetup (classic) Spring MVC demo service
 
 ## Webinar
 
@@ -16,9 +16,9 @@ A demóalkalmazás futtatásához egy MS SQL Server adatbázisra van szükség, 
 application.properties fájlban találhatóak:
 
 ```properties
-spring.datasource.url=jdbc:sqlserver://localhost:1433;database=RXJAVA
+spring.datasource.url=jdbc:sqlserver://localhost:1433;database=RXJAVA;encrypt=false
 spring.datasource.username=SA
-spring.datasource.password=Asdfghjkl#123
+spring.datasource.password=Pass1234
 ```
 
 ## Adatbázis
@@ -26,35 +26,28 @@ spring.datasource.password=Asdfghjkl#123
 A szolgáltatás működéséhez az alábbi adatbázis struktúra létrehozására van szükség
 
 ```sql
-CREATE
-DATABASE RXJAVA COLLATE Latin1_General_CS_AS_WS;
-USE
-RXJAVA;
+CREATE DATABASE rxjava;
 
-CREATE SCHEMA demo;
-
-CREATE TABLE demo.FinancialTransaction
+CREATE TABLE IF NOT EXISTS financial_transaction
 (
-    TransactionId         CHAR(36)
-        CONSTRAINT PK_FinancialTransaction
-            PRIMARY KEY CLUSTERED,
-    PreviousTransactionId CHAR(36) NULL,
-    Data                  VARBINARY( MAX) NOT NULL
+    transaction_id          char(36) PRIMARY KEY,
+    previous_transaction_id char(36) NULL,
+    data                    bytea    NOT NULL
 );
 
-CREATE TABLE demo.ArchiveFinancialTransaction
+CREATE TABLE IF NOT EXISTS archive_financial_transaction
 (
-    AccountStatementId CHAR(36) NOT NULL,
-    TransactionId      CHAR(36) NOT NULL,
-    TransactionNumber  INT      NOT NULL,
-    CompressedData     VARBINARY( MAX) NOT NULL,
-    Signature          BINARY(512) NOT NULL,
+    account_statement_id CHAR(36) NOT NULL,
+    transaction_id       CHAR(36) NOT NULL,
+    transaction_number   INT      NOT NULL,
+    compressed_data      bytea    NOT NULL,
+    signature            bytea    NOT NULL,
     CONSTRAINT PK_ArchiveFinancialTransaction
-        PRIMARY KEY CLUSTERED (AccountStatementId, TransactionId)
+        PRIMARY KEY (account_statement_id, transaction_id)
 );
 
-CREATE UNIQUE INDEX AK_ArchiveFinancialTransaction_TransactionId
-    ON demo.ArchiveFinancialTransaction (TransactionId);
+CREATE UNIQUE INDEX archive_financial_transaction_transaction_id_key
+    ON archive_financial_transaction (transaction_id);
 ```
 
 ## Tesztadat
@@ -68,7 +61,7 @@ Lásd: BlockingSpringServiceDemoApplication.generateRandomData
 ## Tesztelés
 
 Az alábbi REST API végpont hívással indítható el a szolgáltatás által végzett kivonatolás. Értelem szerűen a HTTP
-body-ban meghatározott lastTranscationId értékét ki kell cserélni egy a "top_transactionIds. txt"-ben található UUID
+body-ban meghatározott lastTranscationId értékét ki kell cserélni egy a "top_transactionIds.txt"-ben található UUID
 egyikre. (Mindegyik UUID-re csak egyszer futtatható a "számlakivonat" generálás.)
 
 ```shell

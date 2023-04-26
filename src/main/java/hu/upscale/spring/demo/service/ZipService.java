@@ -1,22 +1,21 @@
 package hu.upscale.spring.demo.service;
 
 import hu.upscale.spring.demo.exception.CompressionException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
 /**
  * @author László Zoltán
  */
+@Slf4j
 @Service
 public class ZipService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ZipService.class);
 
     private static final int KB_IN_BYTES = 1_024;
 
@@ -35,8 +34,8 @@ public class ZipService {
 
             byte[] output = outputStream.toByteArray();
 
-            LOGGER.info("Zip compression original data length: {} Kb", data.length / KB_IN_BYTES);
-            LOGGER.info("Zip compression compressed data length: {} Kb", output.length / KB_IN_BYTES);
+            log.debug("Zip compression original data length: {} Kb", data.length / KB_IN_BYTES);
+            log.debug("Zip compression compressed data length: {} Kb", output.length / KB_IN_BYTES);
 
             return output;
         } catch (IOException e) {
@@ -57,8 +56,8 @@ public class ZipService {
 
             byte[] output = outputStream.toByteArray();
 
-            LOGGER.info("Zip decompression compressed data length: {} Kb", data.length / KB_IN_BYTES);
-            LOGGER.info("Zip decompression decompressed data length: {} Kb", output.length / KB_IN_BYTES);
+            log.debug("Zip decompression compressed data length: {} Kb", data.length / KB_IN_BYTES);
+            log.debug("Zip decompression decompressed data length: {} Kb", output.length / KB_IN_BYTES);
 
             return output;
         } catch (IOException | DataFormatException e) {
